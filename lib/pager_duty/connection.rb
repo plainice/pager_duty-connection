@@ -159,13 +159,14 @@ module PagerDuty
       @connection = Faraday.new do |conn|
         conn.url_prefix = url
 
-        token_arg =
-          case token_type
-          when :Token then { token: token }
-          when :Bearer then token
-          else raise ArgumentError, "invalid token_type: #{token_type.inspect}"
-          end
-        conn.authorization(token_type, token_arg)
+        case token_type
+        when :Token
+          conn.request :authorization, "Token", "token=#{token}"
+        when :Bearer
+          conn.request :authorization, "Bearer", token
+        else
+          raise ArgumentError, "invalid token_type: #{token_type.inspect}"
+        end
 
         conn.use ConvertTimesParametersToISO8601
 
