@@ -76,7 +76,7 @@ module PagerDuty
       end
     end
 
-    class ParseTimeStrings < Faraday::Response::Middleware
+    class ParseTimeStrings < Faraday::Middleware
       TIME_KEYS = %w(
         at
         created_at
@@ -106,6 +106,12 @@ module PagerDuty
         assigned_to
         pending_actions
       )
+
+      def on_complete(env)
+        env.body = parse(env.body)
+      end
+
+      private
 
       def parse(body)
         case body
