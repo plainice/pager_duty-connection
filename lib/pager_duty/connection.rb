@@ -108,7 +108,9 @@ module PagerDuty
       )
 
       def on_complete(env)
-        env.body = parse(env.body)
+        if env.body
+          env.body = parse(env.body)
+        end
       end
 
       private
