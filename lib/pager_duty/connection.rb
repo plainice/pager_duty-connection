@@ -1,5 +1,4 @@
 require 'faraday'
-require 'faraday_middleware'
 require 'active_support'
 require 'active_support/core_ext'
 require 'active_support/time_with_zone'
@@ -77,7 +76,7 @@ module PagerDuty
       end
     end
 
-    class ParseTimeStrings < Faraday::Response::Middleware
+    class ParseTimeStrings < Faraday::Middleware
       TIME_KEYS = %w(
         at
         created_at
@@ -108,7 +107,19 @@ module PagerDuty
         pending_actions
       )
 
+      def on_complete(env)
+        if env.body
+          env.body = parse(env.body)
+        end
+      end
+
+      private
+
       def parse(body)
+        if body.respond_to?(:empty?) && body.empty?
+          return body
+        end
+
         case body
         when Hash, ::Hashie::Mash
           OBJECT_KEYS.each do |key|
@@ -154,13 +165,14 @@ module PagerDuty
       @connection = Faraday.new do |conn|
         conn.url_prefix = url
 
-        token_arg =
-          case token_type
-          when :Token then { token: token }
-          when :Bearer then token
-          else raise ArgumentError, "invalid token_type: #{token_type.inspect}"
-          end
-        conn.authorization(token_type, token_arg)
+        case token_type
+        when :Token
+          conn.request :authorization, "Token", "token=#{token}"
+        when :Bearer
+          conn.request :authorization, "Bearer", token
+        else
+          raise ArgumentError, "invalid token_type: #{token_type.inspect}"
+        end
 
         conn.use ConvertTimesParametersToISO8601
 
