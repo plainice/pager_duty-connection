@@ -67,7 +67,7 @@ module PagerDuty
 
         body = env[:body]
         TIME_KEYS.each do |key|
-          if body.has_key?(key)
+          if body&.has_key?(key)
             body[key] = body[key].iso8601 if body[key].respond_to?(:iso8601)
           end
         end
@@ -223,7 +223,7 @@ module PagerDuty
 
     private
 
-    def run_request(method, path, body: {}, headers: {}, query_params: {})
+    def run_request(method, path, body: nil, headers: {}, query_params: {})
       path = path.gsub(/^\//, '') # strip leading slash, to make sure relative things happen on the connection
 
       connection.params = query_params
